@@ -4,5 +4,5 @@
  */
 ?>
 <p <?php echo get_block_wrapper_attributes(); ?>>
-	<?php esc_html_e( 'Bitnob Gateway – hello from a dynamic block!', 'bitnobgateway' ); ?>
+	<?php esc_html_e( 'Bitnob Gateway – hello from a dynamic block! Am a code developer.', 'bitnobgateway' ); ?>
 </p>
