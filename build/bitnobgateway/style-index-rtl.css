@@ -1,14 +1,65 @@
 /*!*****************************************************************************************************************************************************************************************************************************************************!*\
   !*** css ./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[4].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[4].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[4].use[3]!./src/bitnobgateway/style.scss ***!
   \*****************************************************************************************************************************************************************************************************************************************************/
-/**
- * The following styles get applied both on the front of your site
- * and in the editor.
- *
- * Replace them with your own styles or remove the file completely.
- */
-.wp-block-create-block-bitnobgateway {
-  background-color: #21759b;
+.wp-block-create-block-bitnobgateway,
+.bitnob-gateway-container {
+  background-color: #1c1c1e;
+  color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-family: "Poppins", sans-serif;
+  max-width: 600px;
+  margin: 2rem auto;
+  text-align: right;
+}
+
+.bitnob-heading {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: #f7931a;
+  text-align: center;
+}
+
+.bitnob-description {
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  color: #dcdcdc;
+  text-align: center;
+}
+
+.bitnob-form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.bitnob-form-group label {
+  margin-bottom: 0.3rem;
+  font-weight: 600;
   color: #fff;
-  padding: 2px;
+}
+
+.bitnob-form-group input {
+  padding: 0.6rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #2c2c2e;
+  color: #fff;
+}
+
+.bitnob-btn {
+  background-color: #f7931a;
+  color: #1c1c1e;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+.bitnob-btn:hover {
+  background-color: #ffa94d;
 }
