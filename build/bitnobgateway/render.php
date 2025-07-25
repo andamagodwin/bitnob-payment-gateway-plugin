@@ -2,6 +2,17 @@
 /**
  * Renders the Bitnob Gateway block with a Lightning payment form.
  */
+
+// Get current user information
+$current_user = wp_get_current_user();
+$user_email = '';
+$user_display_name = '';
+$is_logged_in = is_user_logged_in();
+
+if ( $is_logged_in ) {
+	$user_email = $current_user->user_email;
+	$user_display_name = $current_user->display_name;
+}
 ?>
 
 <div <?php echo get_block_wrapper_attributes(); ?> class="bitnob-gateway-container">
@@ -9,6 +20,17 @@
 	<p class="bitnob-description">
 		<?php esc_html_e( 'Generate a Lightning invoice and get paid instantly.', 'bitnobgateway' ); ?>
 	</p>
+
+	<?php if ( $is_logged_in ) : ?>
+		<div class="bitnob-user-info">
+			<div class="user-welcome">
+				<span class="user-icon">👋</span>
+				<span class="welcome-text">
+					<?php printf( esc_html__( 'Welcome back, %s!', 'bitnobgateway' ), esc_html( $user_display_name ) ); ?>
+				</span>
+			</div>
+		</div>
+	<?php endif; ?>
 
 	<form id="bitnob-form" class="bitnob-form">
 		<?php wp_nonce_field( 'bitnob_ajax_nonce', 'bitnob_nonce' ); ?>
@@ -18,8 +40,28 @@
 			<span class="bitnob-field-error" id="amount-error"></span>
 		</div>
 		<div class="bitnob-form-group">
-			<label for="bitnob-email"><?php esc_html_e( 'Customer Email', 'bitnobgateway' ); ?></label>
-			<input type="email" id="bitnob-email" name="bitnob_email" required />
+			<label for="bitnob-email">
+				<?php esc_html_e( 'Customer Email', 'bitnobgateway' ); ?>
+				<?php if ( $is_logged_in ) : ?>
+					<span class="auto-filled-indicator"><?php esc_html_e( '(Auto-filled)', 'bitnobgateway' ); ?></span>
+				<?php endif; ?>
+			</label>
+			<input 
+				type="email" 
+				id="bitnob-email" 
+				name="bitnob_email" 
+				value="<?php echo esc_attr( $user_email ); ?>"
+				<?php echo $is_logged_in ? '' : 'required'; ?>
+				<?php echo $is_logged_in ? 'readonly' : ''; ?>
+			/>
+			<?php if ( $is_logged_in ) : ?>
+				<small class="email-note">
+					<?php esc_html_e( 'Using your account email. ', 'bitnobgateway' ); ?>
+					<button type="button" class="change-email-btn" id="change-email-btn">
+						<?php esc_html_e( 'Change', 'bitnobgateway' ); ?>
+					</button>
+				</small>
+			<?php endif; ?>
 			<span class="bitnob-field-error" id="email-error"></span>
 		</div>
 		<div class="bitnob-form-group">
@@ -93,7 +135,12 @@
 		// Pass PHP variables to JavaScript
 		window.bitnobData = {
 			ajaxUrl: '<?php echo admin_url( 'admin-ajax.php' ); ?>',
-			nonce: '<?php echo wp_create_nonce( 'bitnob_ajax_nonce' ); ?>'
+			nonce: '<?php echo wp_create_nonce( 'bitnob_ajax_nonce' ); ?>',
+			user: {
+				isLoggedIn: <?php echo $is_logged_in ? 'true' : 'false'; ?>,
+				email: '<?php echo esc_js( $user_email ); ?>',
+				displayName: '<?php echo esc_js( $user_display_name ); ?>'
+			}
 		};
 	</script>
 </div>

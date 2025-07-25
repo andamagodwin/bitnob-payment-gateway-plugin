@@ -11,6 +11,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('bitnob-submit-btn');
     const copyBtn = document.getElementById('copy-invoice');
     const createAnotherBtn = document.getElementById('create-another');
+    const changeEmailBtn = document.getElementById('change-email-btn');
+    const emailInput = document.getElementById('bitnob-email');
 
     if (!form || !window.bitnobData) return;
 
@@ -90,7 +92,67 @@ document.addEventListener('DOMContentLoaded', function() {
             hideAllMessages();
             form.style.display = 'block';
             form.reset();
+            
+            // Restore user email if logged in
+            if (window.bitnobData.user.isLoggedIn) {
+                setTimeout(() => {
+                    emailInput.value = window.bitnobData.user.email;
+                    emailInput.setAttribute('readonly', 'readonly');
+                    emailInput.removeAttribute('required');
+                    if (changeEmailBtn) {
+                        changeEmailBtn.textContent = 'Change';
+                    }
+                    // Reset visual styling
+                    emailInput.style.borderColor = '#333';
+                    emailInput.style.backgroundColor = '#2c2c2e';
+                }, 0);
+            }
+            
             document.getElementById('bitnob-description').value = 'Lightning payment';
+        });
+    }
+
+    // Change email functionality for logged-in users
+    if (changeEmailBtn && window.bitnobData.user.isLoggedIn) {
+        changeEmailBtn.addEventListener('click', function() {
+            const currentlyReadonly = emailInput.hasAttribute('readonly');
+            
+            if (currentlyReadonly) {
+                // Enable editing
+                emailInput.removeAttribute('readonly');
+                emailInput.focus();
+                emailInput.select();
+                emailInput.setAttribute('required', 'required');
+                changeEmailBtn.textContent = 'Restore';
+                
+                // Add visual indication
+                emailInput.style.borderColor = '#f7931a';
+                emailInput.style.backgroundColor = '#2c2c2e';
+            } else {
+                // Restore original email
+                emailInput.value = window.bitnobData.user.email;
+                emailInput.setAttribute('readonly', 'readonly');
+                emailInput.removeAttribute('required');
+                changeEmailBtn.textContent = 'Change';
+                
+                // Remove visual indication
+                emailInput.style.borderColor = '#333';
+                emailInput.style.backgroundColor = '#2c2c2e';
+            }
+        });
+
+        // Handle form reset to restore original email
+        form.addEventListener('reset', function() {
+            if (window.bitnobData.user.isLoggedIn) {
+                setTimeout(() => {
+                    emailInput.value = window.bitnobData.user.email;
+                    emailInput.setAttribute('readonly', 'readonly');
+                    emailInput.removeAttribute('required');
+                    if (changeEmailBtn) {
+                        changeEmailBtn.textContent = 'Change';
+                    }
+                }, 0);
+            }
         });
     }
 
@@ -106,8 +168,15 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         }
 
-        if (!email.value || !isValidEmail(email.value)) {
-            showFieldError('email-error', 'Please enter a valid email address');
+        // Only validate email if it's not readonly (i.e., user is not logged in or has chosen to change email)
+        if (!email.hasAttribute('readonly')) {
+            if (!email.value || !isValidEmail(email.value)) {
+                showFieldError('email-error', 'Please enter a valid email address');
+                isValid = false;
+            }
+        } else if (window.bitnobData.user.isLoggedIn && !email.value) {
+            // This shouldn't happen, but just in case
+            showFieldError('email-error', 'Email is required');
             isValid = false;
         }
 
@@ -160,6 +229,30 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show invoice section
         invoiceDiv.style.display = 'block';
         form.style.display = 'none';
+
+        // Show success message for logged-in users
+        if (window.bitnobData.user.isLoggedIn) {
+            showSuccessMessage(`Invoice created for ${window.bitnobData.user.displayName}`);
+        }
+    }
+
+    function showSuccessMessage(message) {
+        // Create a temporary success message
+        const successMsg = document.createElement('div');
+        successMsg.className = 'bitnob-success-message';
+        successMsg.innerHTML = `
+            <div class="success-icon">✅</div>
+            <div class="success-text">${message}</div>
+        `;
+        
+        invoiceDiv.insertBefore(successMsg, invoiceDiv.firstChild);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            if (successMsg.parentNode) {
+                successMsg.parentNode.removeChild(successMsg);
+            }
+        }, 5000);
     }
 
     function hideAllMessages() {

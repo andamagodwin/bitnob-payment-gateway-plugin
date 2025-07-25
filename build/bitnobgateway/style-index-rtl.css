@@ -32,6 +32,27 @@
   opacity: 0.9;
 }
 
+.bitnob-user-info {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(247, 147, 26, 0.1);
+  border: 1px solid rgba(247, 147, 26, 0.3);
+  border-radius: 8px;
+}
+.bitnob-user-info .user-welcome {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #f7931a;
+  font-weight: 600;
+}
+.bitnob-user-info .user-welcome .user-icon {
+  font-size: 1.2rem;
+}
+.bitnob-user-info .user-welcome .welcome-text {
+  font-size: 0.95rem;
+}
+
 .bitnob-form-group {
   margin-bottom: 1.5rem;
   display: flex;
@@ -43,6 +64,12 @@
   font-weight: 600;
   color: #fff;
   font-size: 0.95rem;
+}
+.bitnob-form-group label .auto-filled-indicator {
+  color: #4ade80;
+  font-weight: 400;
+  font-size: 0.8rem;
+  margin-right: 0.5rem;
 }
 
 .bitnob-form-group input {
@@ -62,12 +89,41 @@
 .bitnob-form-group input:invalid {
   border-color: #ff4444;
 }
+.bitnob-form-group input[readonly] {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.3);
+  color: #4ade80;
+  cursor: default;
+}
 
 .bitnob-field-error {
   color: #ff4444;
   font-size: 0.85rem;
   margin-top: 0.25rem;
   display: none;
+}
+
+.email-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #dcdcdc;
+}
+.email-note .change-email-btn {
+  background: transparent;
+  color: #f7931a;
+  border: 1px solid rgba(247, 147, 26, 0.5);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.email-note .change-email-btn:hover {
+  background: rgba(247, 147, 26, 0.1);
+  border-color: #f7931a;
 }
 
 .bitnob-btn {
@@ -152,6 +208,26 @@
   background: rgba(255, 68, 68, 0.1);
   color: #ff6b6b;
   border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.bitnob-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(76, 175, 80, 0.1);
+  color: #4ade80;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  animation: slideInDown 0.5s ease-out;
+}
+.bitnob-success-message .success-icon {
+  font-size: 1.2rem;
+}
+.bitnob-success-message .success-text {
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .bitnob-invoice {
@@ -290,6 +366,16 @@
   }
   100% {
     transform: rotate(-360deg);
+  }
+}
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }
 @media (max-width: 480px) {
