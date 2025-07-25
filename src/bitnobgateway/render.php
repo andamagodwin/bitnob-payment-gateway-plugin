@@ -38,15 +38,37 @@ if ( class_exists( 'WooCommerce' ) && function_exists( 'WC' ) ) {
 			$cart_items[] = $product->get_name() . ' (x' . $cart_item['quantity'] . ')';
 		}
 		
-		// Convert to satoshis (simplified conversion - you might want to use a real API)
+		// Convert to satoshis with proper currency handling
 		$btc_rate = get_transient( 'btc_usd_rate' );
 		if ( ! $btc_rate ) {
 			// Fallback rate - in production, fetch from a real API
-			$btc_rate = 45000; // Example: 1 BTC = $45,000
+			$btc_rate = 45000; // Example: 1 BTC = $45,000 USD
 			set_transient( 'btc_usd_rate', $btc_rate, HOUR_IN_SECONDS );
 		}
 		
-		$cart_total_sats = round( ( $cart_total / $btc_rate ) * 100000000 ); // Convert to satoshis
+		// Convert cart total to USD first if it's not already USD
+		$cart_total_usd = $cart_total;
+		if ( $cart_currency !== 'USD' ) {
+			$usd_rate = get_transient( 'usd_' . strtolower( $cart_currency ) . '_rate' );
+			if ( ! $usd_rate ) {
+				// Common exchange rates (fallback - in production, use real API)
+				$exchange_rates = array(
+					'UGX' => 3700,    // 1 USD = 3,700 UGX
+					'EUR' => 0.85,    // 1 USD = 0.85 EUR
+					'GBP' => 0.73,    // 1 USD = 0.73 GBP
+					'KES' => 129,     // 1 USD = 129 KES
+					'NGN' => 1550,    // 1 USD = 1,550 NGN
+					'ZAR' => 18.5,    // 1 USD = 18.5 ZAR
+				);
+				
+				$usd_rate = isset( $exchange_rates[ $cart_currency ] ) ? $exchange_rates[ $cart_currency ] : 1;
+				set_transient( 'usd_' . strtolower( $cart_currency ) . '_rate', $usd_rate, HOUR_IN_SECONDS );
+			}
+			
+			$cart_total_usd = $cart_total / $usd_rate;
+		}
+		
+		$cart_total_sats = round( ( $cart_total_usd / $btc_rate ) * 100000000 ); // Convert to satoshis
 	}
 }
 
@@ -67,16 +89,60 @@ if ( class_exists( 'Easy_Digital_Downloads' ) && function_exists( 'edd_get_cart_
 				$cart_items[] = get_the_title( $item['id'] ) . ' (x' . $item['quantity'] . ')';
 			}
 			
-			// Convert to satoshis
+			// Convert to satoshis with proper currency handling
 			$btc_rate = get_transient( 'btc_usd_rate' );
 			if ( ! $btc_rate ) {
 				$btc_rate = 45000;
 				set_transient( 'btc_usd_rate', $btc_rate, HOUR_IN_SECONDS );
 			}
 			
-			$cart_total_sats = round( ( $cart_total / $btc_rate ) * 100000000 );
+			// Convert cart total to USD first if it's not already USD
+			$cart_total_usd = $cart_total;
+			if ( $cart_currency !== 'USD' ) {
+				$usd_rate = get_transient( 'usd_' . strtolower( $cart_currency ) . '_rate' );
+				if ( ! $usd_rate ) {
+					// Common exchange rates (fallback - in production, use real API)
+					$exchange_rates = array(
+						'UGX' => 3700,    // 1 USD = 3,700 UGX
+						'EUR' => 0.85,    // 1 USD = 0.85 EUR
+						'GBP' => 0.73,    // 1 USD = 0.73 GBP
+						'KES' => 129,     // 1 USD = 129 KES
+						'NGN' => 1550,    // 1 USD = 1,550 NGN
+						'ZAR' => 18.5,    // 1 USD = 18.5 ZAR
+					);
+					
+					$usd_rate = isset( $exchange_rates[ $cart_currency ] ) ? $exchange_rates[ $cart_currency ] : 1;
+					set_transient( 'usd_' . strtolower( $cart_currency ) . '_rate', $usd_rate, HOUR_IN_SECONDS );
+				}
+				
+				$cart_total_usd = $cart_total / $usd_rate;
+			}
+			
+			$cart_total_sats = round( ( $cart_total_usd / $btc_rate ) * 100000000 );
 		}
 	}
+}
+
+// Calculate USD equivalent for display purposes
+$cart_total_usd = $cart_total;
+if ( $cart_total > 0 && $cart_currency !== 'USD' ) {
+	$usd_rate = get_transient( 'usd_' . strtolower( $cart_currency ) . '_rate' );
+	if ( ! $usd_rate ) {
+		// Common exchange rates (fallback - in production, use real API)
+		$exchange_rates = array(
+			'UGX' => 3700,    // 1 USD = 3,700 UGX
+			'EUR' => 0.85,    // 1 USD = 0.85 EUR
+			'GBP' => 0.73,    // 1 USD = 0.73 GBP
+			'KES' => 129,     // 1 USD = 129 KES
+			'NGN' => 1550,    // 1 USD = 1,550 NGN
+			'ZAR' => 18.5,    // 1 USD = 18.5 ZAR
+		);
+		
+		$usd_rate = isset( $exchange_rates[ $cart_currency ] ) ? $exchange_rates[ $cart_currency ] : 1;
+		set_transient( 'usd_' . strtolower( $cart_currency ) . '_rate', $usd_rate, HOUR_IN_SECONDS );
+	}
+	
+	$cart_total_usd = $cart_total / $usd_rate;
 }
 
 // Generate smart description
@@ -117,6 +183,9 @@ if ( ! empty( $cart_items ) ) {
 					<div class="cart-total">
 						<span class="cart-label"><?php esc_html_e( 'Cart Total:', 'bitnobgateway' ); ?></span>
 						<span class="cart-amount"><?php echo esc_html( $cart_currency . ' ' . number_format( $cart_total, 2 ) ); ?></span>
+						<?php if ( $cart_currency !== 'USD' ) : ?>
+							<span class="cart-usd-equivalent">(≈ $<?php echo number_format( $cart_total_usd, 2 ); ?> USD)</span>
+						<?php endif; ?>
 						<span class="cart-conversion">≈ <?php echo number_format( $cart_total_sats ); ?> sats</span>
 					</div>
 					<div class="cart-source">
@@ -147,7 +216,22 @@ if ( ! empty( $cart_items ) ) {
 			/>
 			<?php if ( $cart_total_sats > 0 ) : ?>
 				<small class="amount-note">
-					<?php printf( esc_html__( 'Calculated from %s %s cart total. ', 'bitnobgateway' ), esc_html( $cart_currency ), number_format( $cart_total, 2 ) ); ?>
+					<?php 
+					if ( $cart_currency !== 'USD' ) {
+						printf( 
+							esc_html__( 'Calculated from %s %s (≈ $%s USD) cart total. ', 'bitnobgateway' ), 
+							esc_html( $cart_currency ), 
+							number_format( $cart_total, 2 ),
+							number_format( $cart_total_usd, 2 )
+						);
+					} else {
+						printf( 
+							esc_html__( 'Calculated from %s %s cart total. ', 'bitnobgateway' ), 
+							esc_html( $cart_currency ), 
+							number_format( $cart_total, 2 )
+						);
+					}
+					?>
 					<button type="button" class="change-amount-btn" id="change-amount-btn">
 						<?php esc_html_e( 'Change', 'bitnobgateway' ); ?>
 					</button>
@@ -260,6 +344,7 @@ if ( ! empty( $cart_items ) ) {
 			cart: {
 				hasItems: <?php echo $cart_total > 0 ? 'true' : 'false'; ?>,
 				total: <?php echo $cart_total; ?>,
+				totalUsd: <?php echo $cart_total_usd; ?>,
 				totalSats: <?php echo $cart_total_sats; ?>,
 				currency: '<?php echo esc_js( $cart_currency ); ?>',
 				source: '<?php echo esc_js( $cart_source ); ?>',

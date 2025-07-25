@@ -89,6 +89,13 @@
   font-weight: bold;
   font-size: 1.1rem;
 }
+.bitnob-cart-info .cart-summary .cart-details .cart-total .cart-usd-equivalent {
+  color: #90caf9;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+  opacity: 0.8;
+}
 .bitnob-cart-info .cart-summary .cart-details .cart-total .cart-conversion {
   color: #f7931a;
   font-weight: 600;
