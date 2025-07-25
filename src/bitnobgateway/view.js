@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const createAnotherBtn = document.getElementById('create-another');
     const changeEmailBtn = document.getElementById('change-email-btn');
     const emailInput = document.getElementById('bitnob-email');
+    const changeAmountBtn = document.getElementById('change-amount-btn');
+    const amountInput = document.getElementById('bitnob-amount');
 
     if (!form || !window.bitnobData) return;
 
@@ -108,7 +110,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 0);
             }
             
-            document.getElementById('bitnob-description').value = 'Lightning payment';
+            // Restore cart amount if available
+            if (window.bitnobData.cart.hasItems) {
+                setTimeout(() => {
+                    amountInput.value = window.bitnobData.cart.totalSats;
+                    amountInput.setAttribute('readonly', 'readonly');
+                    if (changeAmountBtn) {
+                        changeAmountBtn.textContent = 'Change';
+                    }
+                    // Reset visual styling
+                    amountInput.style.borderColor = 'rgba(76, 175, 80, 0.3)';
+                    amountInput.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                }, 0);
+            }
+            
+            // Restore smart description
+            document.getElementById('bitnob-description').value = window.bitnobData.cart.description || 'Lightning payment';
         });
     }
 
@@ -156,6 +173,50 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Change amount functionality for cart items
+    if (changeAmountBtn && window.bitnobData.cart.hasItems) {
+        changeAmountBtn.addEventListener('click', function() {
+            const currentlyReadonly = amountInput.hasAttribute('readonly');
+            
+            if (currentlyReadonly) {
+                // Enable editing
+                amountInput.removeAttribute('readonly');
+                amountInput.focus();
+                amountInput.select();
+                changeAmountBtn.textContent = 'Restore';
+                
+                // Add visual indication
+                amountInput.style.borderColor = '#f7931a';
+                amountInput.style.backgroundColor = '#2c2c2e';
+            } else {
+                // Restore cart amount
+                amountInput.value = window.bitnobData.cart.totalSats;
+                amountInput.setAttribute('readonly', 'readonly');
+                changeAmountBtn.textContent = 'Change';
+                
+                // Remove visual indication
+                amountInput.style.borderColor = 'rgba(76, 175, 80, 0.3)';
+                amountInput.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+            }
+        });
+
+        // Handle form reset to restore cart amount
+        form.addEventListener('reset', function() {
+            if (window.bitnobData.cart.hasItems) {
+                setTimeout(() => {
+                    amountInput.value = window.bitnobData.cart.totalSats;
+                    amountInput.setAttribute('readonly', 'readonly');
+                    if (changeAmountBtn) {
+                        changeAmountBtn.textContent = 'Change';
+                    }
+                    // Reset visual styling
+                    amountInput.style.borderColor = 'rgba(76, 175, 80, 0.3)';
+                    amountInput.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                }, 0);
+            }
+        });
+    }
+
     // Utility functions
     function validateForm() {
         let isValid = true;
@@ -163,8 +224,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const amount = document.getElementById('bitnob-amount');
         const email = document.getElementById('bitnob-email');
 
-        if (!amount.value || parseInt(amount.value) < 1) {
-            showFieldError('amount-error', 'Please enter a valid amount (minimum 1 satoshi)');
+        // Validate amount - check if it's readonly (from cart) or manual entry
+        if (!amount.hasAttribute('readonly')) {
+            if (!amount.value || parseInt(amount.value) < 1) {
+                showFieldError('amount-error', 'Please enter a valid amount (minimum 1 satoshi)');
+                isValid = false;
+            }
+        } else if (window.bitnobData.cart.hasItems && !amount.value) {
+            // This shouldn't happen, but just in case
+            showFieldError('amount-error', 'Amount is required');
             isValid = false;
         }
 

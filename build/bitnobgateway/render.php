@@ -13,6 +13,83 @@ if ( $is_logged_in ) {
 	$user_email = $current_user->user_email;
 	$user_display_name = $current_user->display_name;
 }
+
+// Get cart/checkout information from e-commerce plugins
+$cart_total = 0;
+$cart_total_sats = 0;
+$cart_currency = 'USD';
+$is_checkout = false;
+$cart_items = array();
+$cart_source = '';
+
+// WooCommerce integration
+if ( class_exists( 'WooCommerce' ) && function_exists( 'WC' ) ) {
+	$cart_source = 'WooCommerce';
+	$wc_cart = WC()->cart;
+	
+	if ( $wc_cart && ! $wc_cart->is_empty() ) {
+		$cart_total = $wc_cart->get_total( 'edit' ); // Get numeric value without currency symbol
+		$cart_currency = get_woocommerce_currency();
+		$is_checkout = is_checkout() || is_cart();
+		
+		// Get cart items for description
+		foreach ( $wc_cart->get_cart() as $cart_item ) {
+			$product = $cart_item['data'];
+			$cart_items[] = $product->get_name() . ' (x' . $cart_item['quantity'] . ')';
+		}
+		
+		// Convert to satoshis (simplified conversion - you might want to use a real API)
+		$btc_rate = get_transient( 'btc_usd_rate' );
+		if ( ! $btc_rate ) {
+			// Fallback rate - in production, fetch from a real API
+			$btc_rate = 45000; // Example: 1 BTC = $45,000
+			set_transient( 'btc_usd_rate', $btc_rate, HOUR_IN_SECONDS );
+		}
+		
+		$cart_total_sats = round( ( $cart_total / $btc_rate ) * 100000000 ); // Convert to satoshis
+	}
+}
+
+// Easy Digital Downloads integration
+if ( class_exists( 'Easy_Digital_Downloads' ) && function_exists( 'edd_get_cart_total' ) ) {
+	if ( ! $cart_source ) { // Only if WooCommerce not found
+		$cart_source = 'Easy Digital Downloads';
+		$edd_total = edd_get_cart_total();
+		
+		if ( $edd_total > 0 ) {
+			$cart_total = $edd_total;
+			$cart_currency = edd_get_currency();
+			$is_checkout = edd_is_checkout();
+			
+			// Get EDD cart items
+			$edd_cart = edd_get_cart_contents();
+			foreach ( $edd_cart as $item ) {
+				$cart_items[] = get_the_title( $item['id'] ) . ' (x' . $item['quantity'] . ')';
+			}
+			
+			// Convert to satoshis
+			$btc_rate = get_transient( 'btc_usd_rate' );
+			if ( ! $btc_rate ) {
+				$btc_rate = 45000;
+				set_transient( 'btc_usd_rate', $btc_rate, HOUR_IN_SECONDS );
+			}
+			
+			$cart_total_sats = round( ( $cart_total / $btc_rate ) * 100000000 );
+		}
+	}
+}
+
+// Generate smart description
+$smart_description = 'Lightning payment';
+if ( ! empty( $cart_items ) ) {
+	if ( count( $cart_items ) === 1 ) {
+		$smart_description = 'Payment for: ' . $cart_items[0];
+	} else {
+		$smart_description = 'Payment for ' . count( $cart_items ) . ' items';
+	}
+} elseif ( $is_checkout ) {
+	$smart_description = 'Checkout payment';
+}
 ?>
 
 <div <?php echo get_block_wrapper_attributes(); ?> class="bitnob-gateway-container">
@@ -32,11 +109,50 @@ if ( $is_logged_in ) {
 		</div>
 	<?php endif; ?>
 
+	<?php if ( $cart_total > 0 ) : ?>
+		<div class="bitnob-cart-info">
+			<div class="cart-summary">
+				<span class="cart-icon">🛒</span>
+				<div class="cart-details">
+					<div class="cart-total">
+						<span class="cart-label"><?php esc_html_e( 'Cart Total:', 'bitnobgateway' ); ?></span>
+						<span class="cart-amount"><?php echo esc_html( $cart_currency . ' ' . number_format( $cart_total, 2 ) ); ?></span>
+						<span class="cart-conversion">≈ <?php echo number_format( $cart_total_sats ); ?> sats</span>
+					</div>
+					<div class="cart-source">
+						<small><?php printf( esc_html__( 'From %s', 'bitnobgateway' ), esc_html( $cart_source ) ); ?></small>
+					</div>
+				</div>
+			</div>
+		</div>
+	<?php endif; ?>
+
 	<form id="bitnob-form" class="bitnob-form">
 		<?php wp_nonce_field( 'bitnob_ajax_nonce', 'bitnob_nonce' ); ?>
 		<div class="bitnob-form-group">
-			<label for="bitnob-amount"><?php esc_html_e( 'Amount (satoshis)', 'bitnobgateway' ); ?></label>
-			<input type="number" id="bitnob-amount" name="bitnob_amount" required min="1" />
+			<label for="bitnob-amount">
+				<?php esc_html_e( 'Amount (satoshis)', 'bitnobgateway' ); ?>
+				<?php if ( $cart_total_sats > 0 ) : ?>
+					<span class="auto-filled-indicator"><?php esc_html_e( '(From cart)', 'bitnobgateway' ); ?></span>
+				<?php endif; ?>
+			</label>
+			<input 
+				type="number" 
+				id="bitnob-amount" 
+				name="bitnob_amount" 
+				value="<?php echo esc_attr( $cart_total_sats ); ?>"
+				required 
+				min="1"
+				<?php echo $cart_total_sats > 0 ? 'readonly' : ''; ?>
+			/>
+			<?php if ( $cart_total_sats > 0 ) : ?>
+				<small class="amount-note">
+					<?php printf( esc_html__( 'Calculated from %s %s cart total. ', 'bitnobgateway' ), esc_html( $cart_currency ), number_format( $cart_total, 2 ) ); ?>
+					<button type="button" class="change-amount-btn" id="change-amount-btn">
+						<?php esc_html_e( 'Change', 'bitnobgateway' ); ?>
+					</button>
+				</small>
+			<?php endif; ?>
 			<span class="bitnob-field-error" id="amount-error"></span>
 		</div>
 		<div class="bitnob-form-group">
@@ -66,7 +182,7 @@ if ( $is_logged_in ) {
 		</div>
 		<div class="bitnob-form-group">
 			<label for="bitnob-description"><?php esc_html_e( 'Description', 'bitnobgateway' ); ?></label>
-			<input type="text" id="bitnob-description" name="bitnob_description" value="Lightning payment" />
+			<input type="text" id="bitnob-description" name="bitnob_description" value="<?php echo esc_attr( $smart_description ); ?>" />
 		</div>
 		<button type="submit" class="bitnob-btn" id="bitnob-submit-btn">
 			<span class="btn-text"><?php esc_html_e( 'Create Invoice', 'bitnobgateway' ); ?></span>
@@ -140,6 +256,15 @@ if ( $is_logged_in ) {
 				isLoggedIn: <?php echo $is_logged_in ? 'true' : 'false'; ?>,
 				email: '<?php echo esc_js( $user_email ); ?>',
 				displayName: '<?php echo esc_js( $user_display_name ); ?>'
+			},
+			cart: {
+				hasItems: <?php echo $cart_total > 0 ? 'true' : 'false'; ?>,
+				total: <?php echo $cart_total; ?>,
+				totalSats: <?php echo $cart_total_sats; ?>,
+				currency: '<?php echo esc_js( $cart_currency ); ?>',
+				source: '<?php echo esc_js( $cart_source ); ?>',
+				isCheckout: <?php echo $is_checkout ? 'true' : 'false'; ?>,
+				description: '<?php echo esc_js( $smart_description ); ?>'
 			}
 		};
 	</script>

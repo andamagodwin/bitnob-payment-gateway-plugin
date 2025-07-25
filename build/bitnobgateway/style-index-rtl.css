@@ -53,6 +53,56 @@
   font-size: 0.95rem;
 }
 
+.bitnob-cart-info {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(33, 150, 243, 0.1);
+  border: 1px solid rgba(33, 150, 243, 0.3);
+  border-radius: 8px;
+}
+.bitnob-cart-info .cart-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.bitnob-cart-info .cart-summary .cart-icon {
+  font-size: 1.5rem;
+  margin-top: 0.1rem;
+}
+.bitnob-cart-info .cart-summary .cart-details {
+  flex: 1;
+}
+.bitnob-cart-info .cart-summary .cart-details .cart-total {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+.bitnob-cart-info .cart-summary .cart-details .cart-total .cart-label {
+  color: #dcdcdc;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.bitnob-cart-info .cart-summary .cart-details .cart-total .cart-amount {
+  color: #2196f3;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+.bitnob-cart-info .cart-summary .cart-details .cart-total .cart-conversion {
+  color: #f7931a;
+  font-weight: 600;
+  font-size: 1rem;
+  background: rgba(247, 147, 26, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+.bitnob-cart-info .cart-summary .cart-details .cart-source {
+  color: #64b5f6;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
 .bitnob-form-group {
   margin-bottom: 1.5rem;
   display: flex;
@@ -94,6 +144,37 @@
   border-color: rgba(76, 175, 80, 0.3);
   color: #4ade80;
   cursor: default;
+}
+
+.field-with-change {
+  position: relative;
+}
+.field-with-change .change-btn {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #2196f3;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.8;
+  z-index: 2;
+}
+.field-with-change .change-btn:hover {
+  opacity: 1;
+  background: #1976d2;
+  transform: translateY(-50%) scale(1.05);
+}
+.field-with-change .change-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+.field-with-change input[readonly] {
+  padding-left: 70px;
 }
 
 .bitnob-field-error {
