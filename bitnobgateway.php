@@ -57,3 +57,62 @@ function create_block_bitnobgateway_block_init() {
 	}
 }
 add_action( 'init', 'create_block_bitnobgateway_block_init' );
+
+/**
+ * AJAX handler for creating Bitnob Lightning invoices
+ */
+function bitnob_create_invoice_ajax() {
+	// Verify nonce
+	if ( ! wp_verify_nonce( $_POST['nonce'], 'bitnob_ajax_nonce' ) ) {
+		wp_die( 'Security check failed' );
+	}
+
+	// Sanitize inputs
+	$satoshis    = intval( $_POST['amount'] );
+	$email       = sanitize_email( $_POST['email'] );
+	$description = sanitize_text_field( $_POST['description'] );
+	$expires     = gmdate( 'Y-m-d\TH:i:s\Z', strtotime('+1 day') );
+
+	// Validate required fields
+	if ( empty( $satoshis ) || empty( $email ) ) {
+		wp_send_json_error( 'Amount and email are required fields.' );
+	}
+
+	// Call Bitnob API
+	$response = wp_remote_post( 'https://sandboxapi.bitnob.co/api/v1/wallets/ln/createinvoice', array(
+		'headers' => array(
+			'Authorization' => 'Bearer sk.3a846ff0dfb8.7e7ddae08f05636a83433470b',
+			'Content-Type'  => 'application/json',
+			'Accept'        => 'application/json',
+		),
+		'body' => json_encode( array(
+			'satoshis'     => $satoshis,
+			'customerEmail'=> $email,
+			'description'  => $description,
+			'expiresAt'    => $expires,
+		) ),
+		'timeout' => 30,
+	) );
+
+	if ( is_wp_error( $response ) ) {
+		wp_send_json_error( 'Error connecting to payment service. Please try again.' );
+	}
+
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	
+	if ( $data && $data['status'] ) {
+		wp_send_json_success( array(
+			'description' => $data['data']['description'],
+			'request'     => $data['data']['request'],
+			'amount'      => $satoshis,
+			'qr_url'      => 'https://api.qrserver.com/v1/create-qr-code/?data=' . urlencode( $data['data']['request'] ) . '&size=300x300'
+		) );
+	} else {
+		$error_message = isset( $data['message'] ) ? $data['message'] : 'Failed to create invoice. Please try again.';
+		wp_send_json_error( $error_message );
+	}
+}
+
+// Register AJAX handlers
+add_action( 'wp_ajax_bitnob_create_invoice', 'bitnob_create_invoice_ajax' );
+add_action( 'wp_ajax_nopriv_bitnob_create_invoice', 'bitnob_create_invoice_ajax' );
